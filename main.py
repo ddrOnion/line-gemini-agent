@@ -22,7 +22,7 @@ line_bot_api = LineBotApi(LINE_CHANNEL_ACCESS_TOKEN)
 handler = WebhookHandler(LINE_CHANNEL_SECRET)
 genai.configure(api_key=GEMINI_API_KEY)
 
-model = genai.GenerativeModel('models/gemini-2.5-flash-lite')
+model = genai.GenerativeModel('models/gemma-3-12b-it')
 
 # 確保 static 資料夾存在，用於暫存生成的圖片
 if not os.path.exists('static'):
@@ -51,7 +51,7 @@ def handle_message(event):
         prompt = user_msg.replace("/畫圖", "", 1).strip()
         if not prompt:
             return
-        image_model = genai.GenerativeModel('models/gemini-2.0-flash-exp-image-generation')
+        image_model = genai.GenerativeModel('models/gemini-2.5-flash-lite')
         try:
             # 4. 呼叫 Gemini 生圖 API
             response = image_model.generate_content(prompt)
