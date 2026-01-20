@@ -105,10 +105,19 @@ def handle_message(event):
             response = model.generate_content(prompt)
             reply_text = response.text
             
+            # 處理回應過長的問題 (LINE 限制單則 5000 字，且一次最多回傳 5 則)
+            # 將回應切分為多個訊息，每段最多 2000 字以確保安全
+            reply_messages = []
+            chunk_size = 2000
+            for i in range(0, len(reply_text), chunk_size):
+                reply_messages.append(TextSendMessage(text=reply_text[i:i+chunk_size]))
+                if len(reply_messages) >= 5:
+                    break
+
             # 回傳 LINE
             line_bot_api.reply_message(
                 event.reply_token,
-                TextSendMessage(text=reply_text)
+                reply_messages
             )
         except Exception as e:
             print(f"Error: {e}")
