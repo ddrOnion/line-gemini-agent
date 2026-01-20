@@ -51,31 +51,43 @@ def handle_message(event):
         prompt = user_msg.replace("/畫圖", "", 1).strip()
         if not prompt:
             return
-
+        image_model = genai.GenerativeModel('models/gemini-2.0-flash-exp-image-generation')
         try:
-            # 使用指定的模型進行圖片生成
-            img_model = genai.GenerativeModel("models/gemini-2.0-flash-exp-image-generation")
-            result = img_model.generate_content(prompt)
+            # 4. 呼叫 Gemini 生圖 API
+            response = image_model.generate_content(prompt)
             
-            # 儲存圖片到 static 資料夾
+            # 檢查是否成功生成圖片
+            if not response.parts or not response.parts[0].inline_data:
+                 raise Exception("模型拒絕生成或生成失敗")
+
+            image_data = response.parts[0].inline_data.data
+
+            # 5. 將圖片存檔到 static 資料夾
+            # 使用 uuid 產生隨機檔名，避免多人同時使用時蓋掉
             filename = f"{uuid.uuid4()}.png"
-            filepath = os.path.join('static', filename)
-            result.images[0].save(filepath)
+            file_path = os.path.join(app.root_path, 'static', filename)
             
-            # 產生圖片 URL (LINE 需要公開的 HTTPS URL)
-            img_url = f"{request.host_url}static/{filename}"
-            
+            with open(file_path, "wb") as f:
+                f.write(image_data)
+
+            # 6. 產生圖片的公開網址
+            # request.host_url 會抓到你現在的 Render 網址 (例如 https://xxxx.onrender.com/)
+            image_url = request.host_url + 'static/' + filename
+            print(f"Generated Image URL: {image_url}")
+
+            # 7. 發送圖片給 LINE
+            # preview_image_url 是縮圖，我們這裡直接用原圖網址
             line_bot_api.reply_message(
                 event.reply_token,
-                ImageSendMessage(original_content_url=img_url, preview_image_url=img_url)
+                ImageSendMessage(original_content_url=image_url, preview_image_url=image_url)
             )
+
         except Exception as e:
-            print(f"Image generation failed: {e}")
+            print(f"Image generation error: {e}")
             line_bot_api.reply_message(
                 event.reply_token,
-                TextSendMessage(text="圖片生成失敗，請稍後再試。")
+                TextSendMessage(text=f"畫圖失敗了... 原因可能是涉及敏感內容或模型太忙碌。")
             )
-        return
 
     # 邏輯：只有開頭包含 "呼叫" 或是特定關鍵字才觸發 AI，避免群組太吵
     # 你也可以改成檢查是否被 @mention (需要解析 event 細節)
