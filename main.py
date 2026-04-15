@@ -22,7 +22,7 @@ line_bot_api = LineBotApi(LINE_CHANNEL_ACCESS_TOKEN)
 handler = WebhookHandler(LINE_CHANNEL_SECRET)
 genai.configure(api_key=GEMINI_API_KEY)
 
-model = genai.GenerativeModel('models/gemma-3-12b-it')
+model = genai.GenerativeModel('models/gemma-4-31b-it')
 
 # 確保 static 資料夾存在，用於暫存生成的圖片
 if not os.path.exists('static'):
